@@ -22,7 +22,7 @@ class AccountRepoTest {
     fun testCreateAccount_ShouldReturnTheNewAccountNumber() {
         val countryCode = "GB"
 
-        val accountNumber = repo.createAccount(countryCode)
+        val accountNumber = repo.createAccount(countryCode, 0.00)
 
         assertEquals(countryCode, accountNumber.substring(0 until 2))
         assertEquals("00", accountNumber.substring(2 until 4))
@@ -31,11 +31,22 @@ class AccountRepoTest {
 
     @Test
     fun testCreateAccount_ShouldPersistTheAccount() {
-        val accountNumber = repo.createAccount("US")
+        val accountNumber = repo.createAccount("US", 0.00)
 
         db.transaction {
             val saved = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
             assertNotNull(saved)
+        }
+    }
+
+    @Test
+    fun testCreateAccount_ShouldOpenTheAccountWithTheSpecifiedAmount() {
+        val expectedAmount = 500.98
+        val accountNumber = repo.createAccount("US", expectedAmount)
+
+        db.transaction {
+            val saved = Account.select { Account.id.eq(accountNumber) }.single()
+            assertEquals(expectedAmount.toBigDecimal(), saved[Account.balance])
         }
     }
 }

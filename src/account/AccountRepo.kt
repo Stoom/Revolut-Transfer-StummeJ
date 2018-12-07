@@ -8,11 +8,12 @@ import java.util.*
 import kotlin.random.Random
 
 class AccountRepo(val db: Database) {
-    fun createAccount(countryCode: String): String {
+    fun createAccount(countryCode: String, initialDeposit: Double): String {
         val accountNumber = generateAccountNumber(countryCode)
 
         db.transaction { Account.insert{
             it[Account.id] = accountNumber
+            it[Account.balance] = initialDeposit.toBigDecimal()
             it[Account.dateOpened] = DateTime.now(DateTimeZone.forTimeZone(TimeZone.getTimeZone("UTC")));
         }}
 
