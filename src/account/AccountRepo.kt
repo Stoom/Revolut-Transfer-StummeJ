@@ -1,10 +1,7 @@
 package uk.stumme.account
 
 import org.jetbrains.exposed.sql.*
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
 import uk.stumme.models.database.Account
-import java.util.*
 import kotlin.random.Random
 
 class AccountRepo(val db: Database) {
@@ -14,10 +11,16 @@ class AccountRepo(val db: Database) {
         db.transaction { Account.insert{
             it[Account.id] = accountNumber
             it[Account.balance] = initialDeposit.toBigDecimal()
-            it[Account.dateOpened] = DateTime.now(DateTimeZone.forTimeZone(TimeZone.getTimeZone("UTC")));
         }}
 
         return accountNumber
+    }
+
+    fun getBalance(accountNumber: String): Double {
+        return db.transaction {
+            var account = Account.select { Account.id.eq(accountNumber) }.single()
+            account[Account.balance].toDouble()
+        }
     }
 
     private fun generateAccountNumber(countryCode: String): String {

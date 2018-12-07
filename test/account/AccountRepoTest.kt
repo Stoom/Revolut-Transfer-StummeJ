@@ -3,6 +3,7 @@ package account
 import org.jetbrains.exposed.sql.*
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
+import kotlin.math.exp
 import kotlin.test.*
 
 class AccountRepoTest {
@@ -48,5 +49,21 @@ class AccountRepoTest {
             val saved = Account.select { Account.id.eq(accountNumber) }.single()
             assertEquals(expectedAmount.toBigDecimal(), saved[Account.balance])
         }
+    }
+
+    @Test
+    fun testGetBalance_ShouldReturnBalanceWhenAccountExists() {
+        val accountNumber = "GB00123456789012345678"
+        val expected = 315.12
+        db.transaction {
+            Account.insert {
+                it[Account.id] = accountNumber
+                it[Account.balance] = expected.toBigDecimal()
+            }
+        }
+
+        val actual = repo.getBalance(accountNumber)
+
+        assertEquals(expected, actual)
     }
 }
