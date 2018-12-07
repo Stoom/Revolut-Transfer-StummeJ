@@ -31,12 +31,19 @@ repositories {
 }
 
 dependencies {
+    compile "com.h2database:h2:1.4.191"
+    compile("org.jetbrains.exposed:exposed:0.3.2") {
+        exclude(module: 'log4j')
+        exclude(module: 'slf4j-log4j12')
+        exclude(module: 'kotlin-stdlib')
+    }
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile "io.ktor:ktor-server-netty:$ktor_version"
     compile "ch.qos.logback:logback-classic:$logback_version"
     compile "io.ktor:ktor-server-core:$ktor_version"
     compile "io.ktor:ktor-gson:$ktor_version"
     testCompile "io.ktor:ktor-server-tests:$ktor_version"
+    testCompile "io.mockk:mockk:$mockk_version"
 }
 
 shadowJar {
