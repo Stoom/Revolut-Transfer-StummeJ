@@ -1,4 +1,4 @@
-package uk.stumme.account
+package exceptions
 
 import java.lang.RuntimeException
 

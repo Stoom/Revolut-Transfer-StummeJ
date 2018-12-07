@@ -1,13 +1,11 @@
 package uk.stumme.account
 
+import exceptions.AccountNotFoundException
 import org.jetbrains.exposed.sql.*
 import uk.stumme.models.database.Account
-import kotlin.random.Random
 
 class AccountRepo(val db: Database) {
-    fun createAccount(countryCode: String, initialDeposit: Double): String {
-        val accountNumber = generateAccountNumber(countryCode)
-
+    fun createAccount(accountNumber: String, initialDeposit: Double): String {
         db.transaction { Account.insert{
             it[Account.id] = accountNumber
             it[Account.balance] = initialDeposit.toBigDecimal()
@@ -24,12 +22,5 @@ class AccountRepo(val db: Database) {
             }
             account[Account.balance].toDouble()
         }
-    }
-
-    private fun generateAccountNumber(countryCode: String): String {
-        val accountNumber = (1..18)
-            .map { Random.nextInt(0,9) }
-            .joinToString("")
-        return "${countryCode}00$accountNumber"
     }
 }
