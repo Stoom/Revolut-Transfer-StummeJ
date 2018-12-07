@@ -18,7 +18,10 @@ class AccountRepo(val db: Database) {
 
     fun getBalance(accountNumber: String): Double {
         return db.transaction {
-            var account = Account.select { Account.id.eq(accountNumber) }.single()
+            var account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
+            if (account == null) {
+                throw AccountNotFoundException()
+            }
             account[Account.balance].toDouble()
         }
     }

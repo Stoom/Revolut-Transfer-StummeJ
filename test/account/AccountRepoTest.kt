@@ -1,10 +1,14 @@
 package account
 
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
+import uk.stumme.account.AccountNotFoundException
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
-import kotlin.math.exp
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class AccountRepoTest {
     private var repo: AccountRepo
@@ -65,5 +69,10 @@ class AccountRepoTest {
         val actual = repo.getBalance(accountNumber)
 
         assertEquals(expected, actual)
+    }
+
+    @Test(expected = AccountNotFoundException::class)
+    fun testGetBalance_ShouldThrowExceptionWhenAccountDoesNotExist() {
+        repo.getBalance("Some account that doesn't exist")
     }
 }
