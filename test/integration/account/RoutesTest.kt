@@ -1,18 +1,74 @@
-package account
+package integration.account
 
 import com.google.gson.Gson
 import io.ktor.application.Application
-import io.ktor.http.*
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.deleteAll
+import org.junit.BeforeClass
+import uk.stumme.account.AccountController
+import uk.stumme.account.AccountRepo
+import uk.stumme.models.NewAccountRequest
+import uk.stumme.models.NewAccountResponse
 import uk.stumme.models.TransferRequest
+import uk.stumme.models.database.Account
 import uk.stumme.module
+import uk.stumme.account.fromJson
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.addFactory
+import uy.kohesive.injekt.api.addSingleton
+import uy.kohesive.injekt.api.get
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 
 class RoutesTest {
-    val gson = Gson()
+    companion object {
+        val database: Database = Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
+
+        @BeforeClass
+        @JvmStatic
+        fun classSetup() {
+            Injekt.addSingleton(database)
+            Injekt.addFactory { AccountRepo(Injekt.get()) }
+            Injekt.addFactory { AccountController(Injekt.get()) }
+        }
+
+    }
+
+    private val db: Database
+
+    init {
+        db = RoutesTest.database
+
+        db.transaction {
+            create(Account)
+        }
+    }
+
+    @AfterTest
+    fun cleanup() = db.transaction {
+        Account.deleteAll()
+    }
+
+    @Test
+    fun testPostAccount_ShouldReturn200AndReturnTheNewAccountNumber() {
+        testRequest(
+            HttpMethod.Post,
+            "/accounts",
+            setJsonBody(NewAccountRequest("GB"))
+        ) {
+            assertEquals(HttpStatusCode.OK, response.status())
+
+            val body = Gson().fromJson<NewAccountResponse>(response.content!!)
+            assertEquals("GB", body.accountNumber.substring(0 until 2))
+            assertEquals("00", body.accountNumber.substring(2 until 4))
+        }
+    }
 
     @Test
     fun testPostTransferShouldReturn200() {
@@ -23,11 +79,6 @@ class RoutesTest {
         ) {
             assertEquals(HttpStatusCode.OK, response.status())
         }
-    }
-
-    @Test
-    fun testGetTransfersShouldReturn200() {
-
     }
 
     @Test
@@ -57,7 +108,7 @@ class RoutesTest {
 
     private fun setJsonBody(value: Any): suspend TestApplicationRequest.() -> Unit {
         return {
-            setBody(gson.toJson(value))
+            setBody(Gson().toJson(value))
             addHeader("Content-Type", "application/json")
             addHeader("Accept", "application/json")
         }
