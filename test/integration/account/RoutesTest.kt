@@ -8,6 +8,7 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.junit.BeforeClass
 import uk.stumme.account.AccountController
@@ -16,8 +17,10 @@ import uk.stumme.models.NewAccountRequest
 import uk.stumme.models.NewAccountResponse
 import uk.stumme.models.TransferRequest
 import uk.stumme.models.database.Account
+import uk.stumme.models.domain.Account as DomainAccount
 import uk.stumme.module
 import uk.stumme.account.fromJson
+import uk.stumme.models.GetAccountResponse
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addFactory
 import uy.kohesive.injekt.api.addSingleton
@@ -105,19 +108,32 @@ class RoutesTest {
     }
 
     @Test
+    fun testGetAccountShouldReturn404WhenAccountIsNotFound() {
+        testRequest(HttpMethod.Get, "/accounts/FakeAccount") {
+            assertEquals(HttpStatusCode.NotFound, response.status())
+        }
+    }
+
+    @Test
+    fun testGetAccountShouldReturnAccount() {
+        val expectedAccount = GetAccountResponse("GB00123456789012345678", 50.00)
+        stageAccount(expectedAccount.accountNumber, expectedAccount.balance)
+
+        testRequest(HttpMethod.Get, "/accounts/${expectedAccount.accountNumber}") {
+            val account = Gson().fromJson<GetAccountResponse>(response.content!!)
+
+            assertEquals(expectedAccount.accountNumber, account.accountNumber)
+            assertEquals(expectedAccount.balance, account.balance)
+        }
+    }
+
+    @Test
     fun testPostTransferShouldReturn200() {
         testRequest(
             HttpMethod.Post,
             "/accounts/source/transfer/destination",
             setJsonBody(TransferRequest(100.00))
         ) {
-            assertEquals(HttpStatusCode.OK, response.status())
-        }
-    }
-
-    @Test
-    fun testGetAccountShouldReturn200() {
-        testRequest(HttpMethod.Get, "/accounts/source") {
             assertEquals(HttpStatusCode.OK, response.status())
         }
     }
@@ -146,5 +162,13 @@ class RoutesTest {
             addHeader("Content-Type", "application/json")
             addHeader("Accept", "application/json")
         }
+    }
+
+    private fun stageAccount(accountNumber: String, balance: Double = 0.00) = db.transaction {
+        Account.insert {
+            it[Account.id] = accountNumber
+            it[Account.balance] = balance.toBigDecimal()
+        }
+
     }
 }

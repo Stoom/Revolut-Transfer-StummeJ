@@ -2,12 +2,14 @@ package uk.stumme.account
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import exceptions.AccountNotFoundException
 import exceptions.InvalidArgumentException
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receiveText
 import io.ktor.response.*
 import io.ktor.routing.*
+import uk.stumme.models.GetAccountResponse
 import uk.stumme.models.NewAccountRequest
 import uk.stumme.models.NewAccountResponse
 import uy.kohesive.injekt.Injekt
@@ -34,7 +36,13 @@ fun Routing.accounts(
 
         route("{srcAccount}") {
             get {
-                call.respond(HttpStatusCode.OK, "")
+                try {
+                    val account = controller.getAccount(call.parameters["srcAccount"]!!)
+
+                    call.respond(HttpStatusCode.OK, Gson().toJson(GetAccountResponse(account.accountNumber, account.balance)))
+                } catch (e: AccountNotFoundException) {
+                    call.respond(HttpStatusCode.NotFound)
+                }
             }
 
             route("transfer") {
