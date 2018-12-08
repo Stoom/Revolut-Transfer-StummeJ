@@ -3,8 +3,10 @@ package uk.stumme.account
 import exceptions.AccountNotFoundException
 import org.jetbrains.exposed.sql.*
 import uk.stumme.models.database.Account
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
-class AccountRepo(val db: Database) {
+class AccountRepo(private val db: Database =  Injekt.get()) {
     fun createAccount(accountNumber: String, initialDeposit: Double): String {
         db.transaction { Account.insert{
             it[Account.id] = accountNumber
@@ -16,10 +18,8 @@ class AccountRepo(val db: Database) {
 
     fun getBalance(accountNumber: String): Double {
         return db.transaction {
-            var account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
-            if (account == null) {
-                throw AccountNotFoundException()
-            }
+            val account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
+                ?: throw AccountNotFoundException()
             account[Account.balance].toDouble()
         }
     }
