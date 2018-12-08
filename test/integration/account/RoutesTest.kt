@@ -8,6 +8,7 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.select
 import org.junit.BeforeClass
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
@@ -67,6 +68,39 @@ class RoutesTest {
             val body = Gson().fromJson<NewAccountResponse>(response.content!!)
             assertEquals("GB", body.accountNumber.substring(0 until 2))
             assertEquals("00", body.accountNumber.substring(2 until 4))
+        }
+    }
+
+    @Test
+    fun testPostAccount_ShouldReturn400WhenMissingCountryCode() {
+        testRequest(
+            HttpMethod.Post,
+            "/accounts",
+            setJsonBody(NewAccountRequest(""))
+        ) {
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+        }
+    }
+
+    @Test
+    fun testPostAccount_ShouldAcceptInitialDeposit() {
+        val request = NewAccountRequest("GB", 521.35)
+        testRequest(
+            HttpMethod.Post,
+            "/accounts",
+            setJsonBody(request)
+        ) {
+            assertEquals(HttpStatusCode.OK, response.status())
+
+            val body = Gson().fromJson<NewAccountResponse>(response.content!!)
+
+            db.transaction {
+                val balance = Account.slice(Account.balance)
+                    .select { Account.id.eq(body.accountNumber) }
+                    .single()[Account.balance]
+
+                assertEquals(request.initialDeposit.toBigDecimal(), balance)
+            }
         }
     }
 

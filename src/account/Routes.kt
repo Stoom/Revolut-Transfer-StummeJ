@@ -2,6 +2,7 @@ package uk.stumme.account
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import exceptions.InvalidArgumentException
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receiveText
@@ -21,10 +22,14 @@ fun Routing.accounts(
 
     route("/accounts") {
         post {
-            val request = Gson().fromJson<NewAccountRequest>(call.receiveText())
-            val accountNumber = controller.createAccount(request.countryCode, request.initialDeposit)
+            try {
+                val request = Gson().fromJson<NewAccountRequest>(call.receiveText())
+                val accountNumber = controller.createAccount(request.countryCode, request.initialDeposit)
 
-            call.respond(HttpStatusCode.OK, Gson().toJson(NewAccountResponse(accountNumber)))
+                call.respond(HttpStatusCode.OK, Gson().toJson(NewAccountResponse(accountNumber)))
+            } catch (e: InvalidArgumentException) {
+                call.respond(HttpStatusCode.BadRequest)
+            }
         }
 
         route("{srcAccount}") {
