@@ -1,6 +1,7 @@
 package uk.stumme.account
 
 import exceptions.InvalidArgumentException
+import uk.stumme.models.domain.Account
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.random.Random
@@ -20,6 +21,11 @@ class AccountController(
         this.accountRepo.createAccount(accountNumber, initialDeposit)
 
         return accountNumber
+    }
+
+    fun getAccount(accountNumber: String): Account {
+        val balance = this.accountRepo.getBalance(accountNumber)
+        return Account(accountNumber, balance)
     }
 
     private fun generateAccountNumber(countryCode: String): String {

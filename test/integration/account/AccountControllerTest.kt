@@ -1,7 +1,9 @@
 package integration.account
 
+import exceptions.AccountNotFoundException
 import exceptions.InvalidArgumentException
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.junit.Test
 import uk.stumme.account.AccountController
@@ -11,15 +13,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class AccountControllerTest {
-    val controller: AccountController
-    val database: Database
+    private val controller: AccountController
+    private val db: Database
 
     init {
-        database = Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
-        val accountRepo = AccountRepo(database)
+        db = Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
+        val accountRepo = AccountRepo(db)
         controller = AccountController(accountRepo)
 
-        database.transaction {
+        db.transaction {
             create(Account)
         }
     }
@@ -49,9 +51,30 @@ class AccountControllerTest {
     fun testCreateAccount_SavesAccount() {
         val accountNumber = controller.createAccount("GB", 0.00)
 
-        this.database.transaction {
+        db.transaction {
             val account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
             assertNotNull(account)
         }
+    }
+
+    @Test
+    fun testGetAccount_ReturnsTheAccountWithTheCorrectBalance() {
+        val accountNumber = "GB00123456789012345678"
+        val expectedBalance = 24.50
+        db.transaction {
+            Account.insert {
+                it[Account.id] = accountNumber
+                it[Account.balance] = expectedBalance.toBigDecimal()
+            }
+        }
+
+        val account = controller.getAccount(accountNumber)
+
+        assertEquals(expectedBalance, account.balance)
+    }
+
+    @Test(expected = AccountNotFoundException::class)
+    fun testGetAccount_ThrowsWhenAccountDoesNotExist(){
+        controller.getAccount("THIS ACCOUNT DOES NOT EXIST")
     }
 }
