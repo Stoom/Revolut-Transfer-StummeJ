@@ -8,7 +8,6 @@ import kotlin.random.Random
 
 class AccountController(
     val accountRepo: AccountRepo = Injekt.get()
-//    val transactionRepo: TransactionRepo = Injekt.get()
 ) {
     fun createAccount(countryCode: String, initialDeposit: Double): String {
         if(countryCode.isEmpty())
@@ -26,6 +25,15 @@ class AccountController(
     fun getAccount(accountNumber: String): Account {
         val balance = this.accountRepo.getBalance(accountNumber)
         return Account(accountNumber, balance)
+    }
+
+    fun transfer(srcAccount: String, dstAccount: String, amount: Double) {
+        if(srcAccount.isEmpty())
+            throw InvalidArgumentException("srcAccount")
+        if(dstAccount.isEmpty())
+            throw InvalidArgumentException("dstAccount")
+        if(amount <= 0.00)
+            throw InvalidArgumentException("amount")
     }
 
     private fun generateAccountNumber(countryCode: String): String {

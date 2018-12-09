@@ -74,7 +74,27 @@ class AccountControllerTest {
     }
 
     @Test(expected = AccountNotFoundException::class)
-    fun testGetAccount_ThrowsWhenAccountDoesNotExist(){
+    fun testGetAccount_ThrowsWhenAccountDoesNotExist() {
         controller.getAccount("THIS ACCOUNT DOES NOT EXIST")
+    }
+
+    @Test(expected = InvalidArgumentException::class)
+    fun testTransfer_ThrowsWhenMissingSourceAccount() {
+        controller.transfer("", "foobar", 1.00)
+    }
+
+    @Test(expected = InvalidArgumentException::class)
+    fun testTransfer_ThrowsWhenMissingDestinationAccount() {
+        controller.transfer("foobar", "", 1.00)
+    }
+
+    @Test(expected = InvalidArgumentException::class)
+    fun testTransfer_ThrowsWhenAmountIsZero() {
+        controller.transfer("foobar", "fizzbuzz", 0.00)
+    }
+
+    @Test(expected = InvalidArgumentException::class)
+    fun testTransfer_ThrowsWhenAmountIsLessThanZero() {
+        controller.transfer("foobar", "fizzbuzz", -1.05)
     }
 }
