@@ -1,7 +1,9 @@
 package uk.stumme.account
 
+import exceptions.AccountNotFoundException
 import exceptions.InsufficientFunds
 import exceptions.InvalidArgumentException
+import kotlinx.coroutines.runBlocking
 import uk.stumme.models.domain.Account
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -36,9 +38,14 @@ class AccountController(
         if(amount <= 0.00)
             throw InvalidArgumentException("amount")
 
-        val sourceBalance = accountRepo.getBalance(srcAccount)
-        if (sourceBalance - amount < 0.00)
-            throw InsufficientFunds()
+        trapAccountNotFound("Source account does not exist") {
+            val sourceBalance = accountRepo.getBalance(srcAccount)
+            if (sourceBalance - amount < 0.00)
+                throw InsufficientFunds()
+        }
+        trapAccountNotFound("Destination account does not exist") {
+            accountRepo.getBalance(dstAccount)
+        }
 
         val transferId = accountRepo.transfer(srcAccount, dstAccount, amount)
 
@@ -50,5 +57,15 @@ class AccountController(
             .map { Random.nextInt(0,9) }
             .joinToString("")
         return "${countryCode}00$accountNumber"
+    }
+
+    private fun trapAccountNotFound(message: String, callback: suspend () -> Unit) {
+        try {
+            runBlocking {
+                callback()
+            }
+        } catch (e: AccountNotFoundException){
+            throw AccountNotFoundException(message)
+        }
     }
 }

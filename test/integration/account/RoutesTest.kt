@@ -158,6 +158,34 @@ class RoutesTest {
         }
     }
 
+    @Test
+    fun testPostTransferShouldReturn404WhenSourceAccountDoesNotExist() {
+        stageAccount("destination", 0.00)
+
+        testRequest(
+            HttpMethod.Post,
+            "/accounts/source/transfer/destination",
+            setJsonBody(PostTransferRequest(50.00))
+        ) {
+            assertEquals(HttpStatusCode.NotFound, response.status())
+            assertEquals("Source account does not exist", response.content)
+        }
+    }
+
+    @Test
+    fun testPostTransferShouldReturn404WhenDestinationAccountDoesNotExist() {
+        stageAccount("source", 50.00)
+
+        testRequest(
+            HttpMethod.Post,
+            "/accounts/source/transfer/destination",
+            setJsonBody(PostTransferRequest(50.00))
+        ) {
+            assertEquals(HttpStatusCode.NotFound, response.status())
+            assertEquals("Destination account does not exist", response.content)
+        }
+    }
+
     private fun testRequest(
         method: HttpMethod, uri: String,
         setup: suspend TestApplicationRequest.() -> Unit = {},

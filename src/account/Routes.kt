@@ -55,6 +55,8 @@ fun Routing.accounts(
                         call.respond(HttpStatusCode.OK, Gson().toJson(PostTransferResponse(transferId)))
                     } catch (e: InsufficientFunds) {
                         call.respond(HttpStatusCode.BadRequest, "Insufficient Funds")
+                    } catch (e: AccountNotFoundException) {
+                        call.respond(HttpStatusCode.NotFound, e.message ?: "")
                     }
                 }
 
