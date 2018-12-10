@@ -7,6 +7,8 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import uk.stumme.models.database.Account
+import uk.stumme.models.database.Transactions
+import java.util.*
 
 class AccountRepo() {
     fun createAccount(accountNumber: String, initialDeposit: Double) {
@@ -26,8 +28,8 @@ class AccountRepo() {
         }
     }
 
-    fun transfer(srcAccount: String, dstAccount: String, amount: Double) {
-        transaction {
+    fun transfer(srcAccount: String, dstAccount: String, amount: Double): UUID {
+        return transaction {
             val source = Account.select { Account.id.eq(srcAccount) }
                 .single()[Account.balance]
             val destination = Account.select { Account.id.eq(dstAccount) }
@@ -38,11 +40,16 @@ class AccountRepo() {
                 throw InsufficientFunds()
 
             Account.update({ Account.id eq srcAccount }) {
-                it[Account.balance] = source - transferAmount
+                it[balance] = source - transferAmount
             }
             Account.update({ Account.id eq dstAccount }) {
-                it[Account.balance] = destination + transferAmount
+                it[balance] = destination + transferAmount
             }
+            Transactions.insert {
+                it[sourceAccount] = srcAccount
+                it[destinationAccount] = dstAccount
+                it[Transactions.amount] = transferAmount
+            }[Transactions.id] ?: throw Exception()
         }
     }
 }

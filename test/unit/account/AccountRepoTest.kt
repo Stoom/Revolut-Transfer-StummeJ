@@ -8,6 +8,8 @@ import org.junit.Assert
 import test.stageAccount
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
+import uk.stumme.models.database.Transactions
+import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,7 +28,7 @@ class AccountRepoTest {
         this.accountNumber2 = "GB00876543210987654321"
 
         transaction {
-            SchemaUtils.create(Account)
+            SchemaUtils.create(Account, Transactions)
         }
     }
 
@@ -34,6 +36,7 @@ class AccountRepoTest {
     fun Teardown() {
         transaction {
             Account.deleteAll()
+            Transactions.deleteAll()
         }
     }
 
@@ -91,6 +94,32 @@ class AccountRepoTest {
 
             Assert.assertEquals(0.00, actualAccount1[Account.balance].toDouble(), 0.01)
             Assert.assertEquals(100.00, actualAccount2[Account.balance].toDouble(), 0.01)
+        }
+    }
+
+    @Test(expected = InsufficientFunds::class)
+    fun testTransfer_ShouldThrowExceptionWhenTransferringMoreThanInSourceAccount() {
+        stageAccount(accountNumber1, 50.00)
+        stageAccount(accountNumber2, 0.00)
+
+        repo.transfer(accountNumber1, accountNumber2, 100.00)
+    }
+
+    @Test
+    fun testTransfer_ShouldAddAnAuditRecord() {
+        stageAccount(accountNumber1, 50.00)
+        stageAccount(accountNumber2, 0.00)
+
+        val amount = 25.00
+        val transactionId = repo.transfer(accountNumber1, accountNumber2, amount)
+
+        transaction {
+            val actualTransaction = Transactions.select { Transactions.id eq transactionId }.singleOrNull()
+
+            assertNotNull(actualTransaction)
+            assertEquals(accountNumber1, actualTransaction[Transactions.sourceAccount])
+            assertEquals(accountNumber2, actualTransaction[Transactions.destinationAccount])
+            Assert.assertEquals(amount, actualTransaction[Transactions.amount].toDouble(), 0.01)
         }
     }
 }
