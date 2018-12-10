@@ -40,9 +40,9 @@ class AccountController(
         if (sourceBalance - amount < 0.00)
             throw InsufficientFunds()
 
-        accountRepo.transfer(srcAccount, dstAccount, amount)
+        val transferId = accountRepo.transfer(srcAccount, dstAccount, amount)
 
-        return ""
+        return transferId.toString()
     }
 
     private fun generateAccountNumber(countryCode: String): String {

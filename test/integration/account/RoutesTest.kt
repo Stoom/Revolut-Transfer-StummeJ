@@ -25,6 +25,7 @@ import uy.kohesive.injekt.api.get
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import uk.stumme.models.domain.Account as DomainAccount
 
 
@@ -124,6 +125,9 @@ class RoutesTest {
 
     @Test
     fun testPostTransferShouldReturn200() {
+        val regex = """\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b"""
+            .toRegex(RegexOption.IGNORE_CASE)
+
         stageAccount("source", 100.00)
         stageAccount("destination", 0.00)
 
@@ -132,7 +136,10 @@ class RoutesTest {
             "/accounts/source/transfer/destination",
             setJsonBody(PostTransferRequest(100.00))
         ) {
+            val transfer = Gson().fromJson<PostTransferResponse>(response.content!!)
+
             assertEquals(HttpStatusCode.OK, response.status())
+            assertTrue(regex matches transfer.transferId)
         }
     }
 

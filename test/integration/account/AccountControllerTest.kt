@@ -17,6 +17,7 @@ import uk.stumme.models.database.Account
 import kotlin.test.AfterTest
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class AccountControllerTest {
     private val controller: AccountController
@@ -85,6 +86,21 @@ class AccountControllerTest {
     @Test(expected = AccountNotFoundException::class)
     fun testGetAccount_ThrowsWhenAccountDoesNotExist() {
         controller.getAccount("THIS ACCOUNT DOES NOT EXIST")
+    }
+
+    @Test
+    fun testTransfer_ReturnsTheTransactionUuid() {
+        val regex = """\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b"""
+            .toRegex(RegexOption.IGNORE_CASE)
+
+        val accountNumber1 = "GB00123456789"
+        val accountNumber2 = "GB00987654321"
+        stageAccount(accountNumber1, 50.00)
+        stageAccount(accountNumber2, 0.00)
+
+        val transferId = controller.transfer(accountNumber1, accountNumber2, 25.00)
+
+        assertTrue(regex matches transferId)
     }
 
     @Test(expected = InvalidArgumentException::class)
