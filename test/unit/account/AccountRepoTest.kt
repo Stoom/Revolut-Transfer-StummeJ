@@ -100,15 +100,15 @@ class AccountRepoTest {
         stageAccount(accountNumber2, 0.00)
 
         val amount = 25.00
-        val transactionId = repo.transfer(accountNumber1, accountNumber2, amount)
+        val transferId = repo.transfer(accountNumber1, accountNumber2, amount)
 
         transaction {
-            val actualTransaction = Transactions.select { Transactions.id eq transactionId }.singleOrNull()
+            val transfer = Transactions.select { Transactions.id eq transferId }.singleOrNull()
 
-            assertNotNull(actualTransaction)
-            assertEquals(accountNumber1, actualTransaction[Transactions.sourceAccount])
-            assertEquals(accountNumber2, actualTransaction[Transactions.destinationAccount])
-            Assert.assertEquals(amount, actualTransaction[Transactions.amount].toDouble(), 0.01)
+            assertNotNull(transfer)
+            assertEquals(accountNumber1, transfer[Transactions.sourceAccount])
+            assertEquals(accountNumber2, transfer[Transactions.destinationAccount])
+            Assert.assertEquals(amount, transfer[Transactions.amount].toDouble(), 0.01)
         }
     }
 }
