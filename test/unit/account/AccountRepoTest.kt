@@ -1,7 +1,6 @@
 package unit.account
 
 import assertk.assertions.containsAll
-import assertk.assertions.containsExactly
 import exceptions.AccountNotFoundException
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.insert

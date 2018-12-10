@@ -37,7 +37,6 @@ class RoutesTest {
             Injekt.addFactory { AccountRepo() }
             Injekt.addFactory { AccountController(Injekt.get()) }
         }
-
     }
 
     init {
@@ -202,7 +201,6 @@ class RoutesTest {
             runBlocking { callback() }
         }
     }
-
 
     private fun setJsonBody(value: Any): suspend TestApplicationRequest.() -> Unit {
         return {
