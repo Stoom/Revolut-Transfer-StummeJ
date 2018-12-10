@@ -5,6 +5,7 @@ import exceptions.InsufficientFunds
 import exceptions.InvalidArgumentException
 import kotlinx.coroutines.runBlocking
 import uk.stumme.models.domain.Account
+import uk.stumme.models.domain.Transfer
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.random.Random
@@ -48,8 +49,14 @@ class AccountController(
         }
 
         val transferId = accountRepo.transfer(srcAccount, dstAccount, amount)
-
         return transferId.toString()
+    }
+
+    fun getTransfers(accountNumber: String): List<Transfer> {
+        if (accountNumber.isEmpty())
+            throw InvalidArgumentException("accountNumber")
+
+        return accountRepo.getTransfers(accountNumber)
     }
 
     private fun generateAccountNumber(countryCode: String): String {

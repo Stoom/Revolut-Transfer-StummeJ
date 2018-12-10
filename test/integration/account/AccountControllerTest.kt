@@ -1,5 +1,9 @@
 package integration.account
 
+import assertk.assertions.contains
+import assertk.assertions.containsAll
+import assertk.assertions.containsExactly
+import assertk.assertions.doesNotContain
 import exceptions.AccountNotFoundException
 import exceptions.InsufficientFunds
 import exceptions.InvalidArgumentException
@@ -7,17 +11,14 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.junit.Test
 import test.cleanupDatabase
 import test.initializeDatabase
 import test.stageAccount
+import test.stageTransfer
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
-import kotlin.test.AfterTest
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class AccountControllerTest {
     private val controller: AccountController
@@ -131,5 +132,32 @@ class AccountControllerTest {
         stageAccount(accountNumber2, 0.00)
 
         controller.transfer(accountNumber1, accountNumber2, 100.00)
+    }
+
+    @Test
+    fun testGetTransfers_ShouldReturnTransfers() {
+        val accountNumber1 = "GB00123456789"
+        val accountNumber2 = "GB00987654321"
+        val transfer1 = stageTransfer(accountNumber1, accountNumber2, 50.00)
+        val transfer2 = stageTransfer(accountNumber1, accountNumber2, 100.00)
+        val transfer3 = stageTransfer(accountNumber2, accountNumber1, 1.00)
+
+        val transfers = controller.getTransfers(accountNumber1)
+            .map { it.id }
+
+        assertk.assert(transfers).containsAll(transfer1, transfer2)
+        assertk.assert(transfers).doesNotContain(transfer3)
+    }
+
+    @Test
+    fun testGetTransfers_ShouldReturnEmptyListWhenNoTransfers() {
+        val transfers = controller.getTransfers("source")
+
+        assertEquals(0, transfers.size)
+    }
+
+    @Test(expected = InvalidArgumentException::class)
+    fun testGetTransfers_ShouldThrowWhenEmptyAccount() {
+        controller.getTransfers("")
     }
 }
