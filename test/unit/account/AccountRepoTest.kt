@@ -3,6 +3,7 @@ package unit.account
 import exceptions.AccountNotFoundException
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.junit.Assert
 import test.stageAccount
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
@@ -72,5 +73,24 @@ class AccountRepoTest {
     @Test(expected = AccountNotFoundException::class)
     fun testGetBalance_ShouldThrowExceptionWhenAccountDoesNotExist() {
         repo.getBalance("Some account that doesn't exist")
+    }
+
+    @Test
+    fun testTransfer_ShouldMoveMoneyBetweenAccounts() {
+        val account1 = "GB001234567890"
+        val account2 = "GB000987654321"
+
+        stageAccount(account1, 100.00)
+        stageAccount(account2, 0.00)
+
+        repo.transfer(account1, account2, 100.00)
+
+        transaction {
+            val actualAccount1 = Account.select{ Account.id.eq(account1) }.single()
+            val actualAccount2 = Account.select{ Account.id.eq(account2) }.single()
+
+            Assert.assertEquals(0.00, actualAccount1[Account.balance].toDouble(), 0.01)
+            Assert.assertEquals(100.00, actualAccount2[Account.balance].toDouble(), 0.01)
+        }
     }
 }

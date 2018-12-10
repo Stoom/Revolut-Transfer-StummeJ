@@ -24,4 +24,19 @@ class AccountRepo() {
             account[Account.balance].toDouble()
         }
     }
+
+    fun transfer(srcAccount: String, dstAccount: String, amount: Double) {
+        transaction {
+            val source = Account.select { Account.id.eq(srcAccount) }.single()
+            val destination = Account.select { Account.id.eq(dstAccount) }.single()
+            val transferAmount = amount.toBigDecimal()
+
+            Account.update({ Account.id eq srcAccount }) {
+                it[Account.balance] = source[Account.balance] - transferAmount
+            }
+            Account.update({ Account.id eq dstAccount }) {
+                it[Account.balance] = destination[Account.balance] + transferAmount
+            }
+        }
+    }
 }
