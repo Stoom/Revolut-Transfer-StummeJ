@@ -1,13 +1,13 @@
 package uk.stumme.account
 
 import exceptions.AccountNotFoundException
-import exceptions.InsufficientFunds
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import uk.stumme.models.database.Account
-import uk.stumme.models.database.Transactions
+import uk.stumme.models.database.Transfers
+import uk.stumme.models.domain.Transfer
 import java.util.*
 
 class AccountRepo() {
@@ -42,11 +42,26 @@ class AccountRepo() {
             Account.update({ Account.id eq dstAccount }) {
                 it[balance] = destination + transferAmount
             }
-            Transactions.insert {
+            Transfers.insert {
                 it[sourceAccount] = srcAccount
                 it[destinationAccount] = dstAccount
-                it[Transactions.amount] = transferAmount
-            }[Transactions.id] ?: throw Exception()
+                it[Transfers.amount] = transferAmount
+            }[Transfers.id] ?: throw Exception()
+        }
+    }
+
+    fun getTransfers(accountNumber: String): List<Transfer> {
+        return transaction {
+            Transfers.select {
+                Transfers.sourceAccount eq accountNumber
+            }.toList()
+                .map { Transfer(
+                    it[Transfers.id],
+                    it[Transfers.sourceAccount],
+                    it[Transfers.destinationAccount],
+                    it[Transfers.amount].toDouble()
+                )
+            }
         }
     }
 }

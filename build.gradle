@@ -41,6 +41,7 @@ dependencies {
     compile "uy.kohesive.injekt:injekt-core:1.16.+"
     testCompile "io.ktor:ktor-server-tests:$ktor_version"
     testCompile "io.mockk:mockk:$mockk_version"
+    testCompile 'com.willowtreeapps.assertk:assertk-jvm:0.12'
 }
 
 shadowJar {

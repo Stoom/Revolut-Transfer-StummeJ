@@ -3,7 +3,7 @@ package uk.stumme.models.database
 import org.jetbrains.exposed.sql.Table
 import java.util.*
 
-object Transactions: Table() {
+object Transfers: Table() {
     val id = uuid("id").default(UUID.randomUUID())
     val sourceAccount = varchar("source", 30)
     val destinationAccount = varchar("destination", 30)

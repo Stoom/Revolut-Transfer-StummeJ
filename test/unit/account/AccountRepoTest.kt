@@ -1,5 +1,7 @@
 package unit.account
 
+import assertk.assertions.containsAll
+import assertk.assertions.containsExactly
 import exceptions.AccountNotFoundException
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.insert
@@ -11,7 +13,8 @@ import test.initializeDatabase
 import test.stageAccount
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
-import uk.stumme.models.database.Transactions
+import uk.stumme.models.database.Transfers
+import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -103,12 +106,37 @@ class AccountRepoTest {
         val transferId = repo.transfer(accountNumber1, accountNumber2, amount)
 
         transaction {
-            val transfer = Transactions.select { Transactions.id eq transferId }.singleOrNull()
+            val transfer = Transfers.select { Transfers.id eq transferId }.singleOrNull()
 
             assertNotNull(transfer)
-            assertEquals(accountNumber1, transfer[Transactions.sourceAccount])
-            assertEquals(accountNumber2, transfer[Transactions.destinationAccount])
-            Assert.assertEquals(amount, transfer[Transactions.amount].toDouble(), 0.01)
+            assertEquals(accountNumber1, transfer[Transfers.sourceAccount])
+            assertEquals(accountNumber2, transfer[Transfers.destinationAccount])
+            Assert.assertEquals(amount, transfer[Transfers.amount].toDouble(), 0.01)
         }
+    }
+
+    @Test
+    fun testGetTransfers_ShouldReturnAllTransfersForAnAccount() {
+        var transferId1: UUID? = UUID(0L, 0L)
+        var transferId2: UUID? = UUID(0L, 0L)
+        transaction {
+            transferId1 = Transfers.insert {
+                it[Transfers.id] = UUID.randomUUID()
+                it[Transfers.sourceAccount] = "source"
+                it[Transfers.destinationAccount] = "destination"
+                it[Transfers.amount] = 25.toBigDecimal()
+            } get Transfers.id
+            transferId2 = Transfers.insert {
+                it[Transfers.id] = UUID.randomUUID()
+                it[Transfers.sourceAccount] = "source"
+                it[Transfers.destinationAccount] = "destination"
+                it[Transfers.amount] = 25.toBigDecimal()
+            } get Transfers.id
+        }
+
+        val transfers = repo.getTransfers("source")
+            .map { it.id }
+
+        assertk.assert(transfers).containsAll(transferId1, transferId2)
     }
 }
