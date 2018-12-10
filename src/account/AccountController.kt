@@ -56,6 +56,10 @@ class AccountController(
         if (accountNumber.isEmpty())
             throw InvalidArgumentException("accountNumber")
 
+        trapAccountNotFound {
+            accountRepo.getBalance(accountNumber)
+        }
+
         return accountRepo.getTransfers(accountNumber)
     }
 
@@ -66,7 +70,7 @@ class AccountController(
         return "${countryCode}00$accountNumber"
     }
 
-    private fun trapAccountNotFound(message: String, callback: suspend () -> Unit) {
+    private fun trapAccountNotFound(message: String? = null, callback: suspend () -> Unit) {
         try {
             runBlocking {
                 callback()

@@ -138,6 +138,7 @@ class AccountControllerTest {
     fun testGetTransfers_ShouldReturnTransfers() {
         val accountNumber1 = "GB00123456789"
         val accountNumber2 = "GB00987654321"
+        stageAccount(accountNumber1, 150.00)
         val transfer1 = stageTransfer(accountNumber1, accountNumber2, 50.00)
         val transfer2 = stageTransfer(accountNumber1, accountNumber2, 100.00)
         val transfer3 = stageTransfer(accountNumber2, accountNumber1, 1.00)
@@ -151,13 +152,20 @@ class AccountControllerTest {
 
     @Test
     fun testGetTransfers_ShouldReturnEmptyListWhenNoTransfers() {
-        val transfers = controller.getTransfers("source")
+        val accountNumber = "GB00123456789"
+        stageAccount(accountNumber, 150.00)
+        val transfers = controller.getTransfers(accountNumber)
 
         assertEquals(0, transfers.size)
     }
 
     @Test(expected = InvalidArgumentException::class)
-    fun testGetTransfers_ShouldThrowWhenEmptyAccount() {
+    fun testGetTransfers_ShouldThrowExceptionWhenEmptyAccount() {
         controller.getTransfers("")
+    }
+
+    @Test(expected = AccountNotFoundException::class)
+    fun testGetTransfers_ShouldThrowExceptionWhenAccountDoesNotExist() {
+        controller.getTransfers("ACCOUNT THAT DOES NOT EXIST")
     }
 }
