@@ -7,10 +7,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.deleteAll
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.BeforeClass
+import test.stageAccount
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.NewAccountRequest
@@ -32,31 +34,28 @@ import kotlin.test.assertEquals
 
 class RoutesTest {
     companion object {
-        val database: Database = Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
-
         @BeforeClass
         @JvmStatic
         fun classSetup() {
-            Injekt.addSingleton(database)
-            Injekt.addFactory { AccountRepo(Injekt.get()) }
+            Injekt.addFactory { AccountRepo() }
             Injekt.addFactory { AccountController(Injekt.get()) }
         }
 
     }
 
-    private val db: Database
-
     init {
-        db = RoutesTest.database
+        Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
 
-        db.transaction {
-            create(Account)
+        transaction {
+            SchemaUtils.create(Account)
         }
     }
 
     @AfterTest
-    fun cleanup() = db.transaction {
-        Account.deleteAll()
+    fun cleanup() {
+        transaction {
+            Account.deleteAll()
+        }
     }
 
     @Test
@@ -97,7 +96,7 @@ class RoutesTest {
 
             val body = Gson().fromJson<NewAccountResponse>(response.content!!)
 
-            db.transaction {
+            transaction {
                 val balance = Account.slice(Account.balance)
                     .select { Account.id.eq(body.accountNumber) }
                     .single()[Account.balance]
@@ -162,13 +161,5 @@ class RoutesTest {
             addHeader("Content-Type", "application/json")
             addHeader("Accept", "application/json")
         }
-    }
-
-    private fun stageAccount(accountNumber: String, balance: Double = 0.00) = db.transaction {
-        Account.insert {
-            it[Account.id] = accountNumber
-            it[Account.balance] = balance.toBigDecimal()
-        }
-
     }
 }

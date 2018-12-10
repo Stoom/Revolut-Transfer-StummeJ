@@ -3,9 +3,12 @@ package integration.account
 import exceptions.AccountNotFoundException
 import exceptions.InvalidArgumentException
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.Test
+import test.stageAccount
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
@@ -14,15 +17,15 @@ import kotlin.test.assertNotNull
 
 class AccountControllerTest {
     private val controller: AccountController
-    private val db: Database
 
     init {
-        db = Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
-        val accountRepo = AccountRepo(db)
+        Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
+
+        val accountRepo = AccountRepo()
         controller = AccountController(accountRepo)
 
-        db.transaction {
-            create(Account)
+        transaction {
+            SchemaUtils.create(Account)
         }
     }
 
@@ -51,7 +54,7 @@ class AccountControllerTest {
     fun testCreateAccount_SavesAccount() {
         val accountNumber = controller.createAccount("GB", 0.00)
 
-        db.transaction {
+        transaction {
             val account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
             assertNotNull(account)
         }
@@ -61,7 +64,7 @@ class AccountControllerTest {
     fun testGetAccount_ReturnsTheAccountWithTheCorrectBalance() {
         val accountNumber = "GB00123456789012345678"
         val expectedBalance = 24.50
-        db.transaction {
+        transaction {
             Account.insert {
                 it[Account.id] = accountNumber
                 it[Account.balance] = expectedBalance.toBigDecimal()
