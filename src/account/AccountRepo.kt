@@ -8,15 +8,13 @@ import org.jetbrains.exposed.sql.update
 import uk.stumme.models.database.Account
 
 class AccountRepo() {
-    fun createAccount(accountNumber: String, initialDeposit: Double): String {
+    fun createAccount(accountNumber: String, initialDeposit: Double) {
         transaction {
             Account.insert {
                 it[Account.id] = accountNumber
                 it[Account.balance] = initialDeposit.toBigDecimal()
             }
         }
-
-        return accountNumber
     }
 
     fun getBalance(accountNumber: String): Double {

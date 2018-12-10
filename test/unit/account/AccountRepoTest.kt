@@ -35,7 +35,7 @@ class AccountRepoTest {
 
     @Test
     fun testCreateAccount_ShouldPersistTheAccount() {
-        val accountNumber = repo.createAccount(this.accountNumber, 0.00)
+        repo.createAccount(accountNumber, 0.00)
 
         transaction {
             val saved = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
@@ -46,7 +46,7 @@ class AccountRepoTest {
     @Test
     fun testCreateAccount_ShouldOpenTheAccountWithTheSpecifiedAmount() {
         val expectedAmount = 500.98
-        val accountNumber = repo.createAccount(this.accountNumber, expectedAmount)
+        repo.createAccount(accountNumber, expectedAmount)
 
         transaction {
             val saved = Account.select { Account.id.eq(accountNumber) }.single()
@@ -56,7 +56,6 @@ class AccountRepoTest {
 
     @Test
     fun testGetBalance_ShouldReturnBalanceWhenAccountExists() {
-        val accountNumber = this.accountNumber
         val expected = 315.12
         transaction {
             Account.insert {
