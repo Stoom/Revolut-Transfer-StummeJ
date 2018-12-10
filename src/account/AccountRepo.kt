@@ -36,9 +36,6 @@ class AccountRepo() {
                 .single()[Account.balance]
             val transferAmount = amount.toBigDecimal()
 
-            if (source - transferAmount < 0.00.toBigDecimal())
-                throw InsufficientFunds()
-
             Account.update({ Account.id eq srcAccount }) {
                 it[balance] = source - transferAmount
             }

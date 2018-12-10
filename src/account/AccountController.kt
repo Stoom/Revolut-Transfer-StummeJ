@@ -1,5 +1,6 @@
 package uk.stumme.account
 
+import exceptions.InsufficientFunds
 import exceptions.InvalidArgumentException
 import uk.stumme.models.domain.Account
 import uy.kohesive.injekt.Injekt
@@ -34,6 +35,12 @@ class AccountController(
             throw InvalidArgumentException("dstAccount")
         if(amount <= 0.00)
             throw InvalidArgumentException("amount")
+
+        val sourceBalance = accountRepo.getBalance(srcAccount)
+        if (sourceBalance - amount < 0.00)
+            throw InsufficientFunds()
+
+        accountRepo.transfer(srcAccount, dstAccount, amount)
     }
 
     private fun generateAccountNumber(countryCode: String): String {

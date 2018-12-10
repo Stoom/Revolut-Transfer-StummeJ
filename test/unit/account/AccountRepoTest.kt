@@ -1,15 +1,17 @@
 package unit.account
 
 import exceptions.AccountNotFoundException
-import exceptions.InsufficientFunds
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.Assert
+import test.cleanupDatabase
+import test.initializeDatabase
 import test.stageAccount
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
 import uk.stumme.models.database.Transactions
-import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -27,17 +29,12 @@ class AccountRepoTest {
         this.accountNumber1 = "GB00123456789012345678"
         this.accountNumber2 = "GB00876543210987654321"
 
-        transaction {
-            SchemaUtils.create(Account, Transactions)
-        }
+        initializeDatabase()
     }
 
     @AfterTest
     fun Teardown() {
-        transaction {
-            Account.deleteAll()
-            Transactions.deleteAll()
-        }
+        cleanupDatabase()
     }
 
     @Test
@@ -95,14 +92,6 @@ class AccountRepoTest {
             Assert.assertEquals(0.00, actualAccount1[Account.balance].toDouble(), 0.01)
             Assert.assertEquals(100.00, actualAccount2[Account.balance].toDouble(), 0.01)
         }
-    }
-
-    @Test(expected = InsufficientFunds::class)
-    fun testTransfer_ShouldThrowExceptionWhenTransferringMoreThanInSourceAccount() {
-        stageAccount(accountNumber1, 50.00)
-        stageAccount(accountNumber2, 0.00)
-
-        repo.transfer(accountNumber1, accountNumber2, 100.00)
     }
 
     @Test

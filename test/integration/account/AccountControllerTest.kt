@@ -1,17 +1,20 @@
 package integration.account
 
 import exceptions.AccountNotFoundException
+import exceptions.InsufficientFunds
 import exceptions.InvalidArgumentException
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.Test
+import test.cleanupDatabase
+import test.initializeDatabase
 import test.stageAccount
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
+import kotlin.test.AfterTest
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -24,9 +27,12 @@ class AccountControllerTest {
         val accountRepo = AccountRepo()
         controller = AccountController(accountRepo)
 
-        transaction {
-            SchemaUtils.create(Account)
-        }
+        initializeDatabase()
+    }
+
+    @AfterTest
+    fun Teardown() {
+        cleanupDatabase()
     }
 
     @Test
@@ -99,5 +105,15 @@ class AccountControllerTest {
     @Test(expected = InvalidArgumentException::class)
     fun testTransfer_ThrowsWhenAmountIsLessThanZero() {
         controller.transfer("foobar", "fizzbuzz", -1.05)
+    }
+
+    @Test(expected = InsufficientFunds::class)
+    fun testTransfer_ShouldThrowExceptionWhenTransferringMoreThanInSourceAccount() {
+        val accountNumber1 = "GB00123456789"
+        val accountNumber2 = "GB00987654321"
+        stageAccount(accountNumber1, 50.00)
+        stageAccount(accountNumber2, 0.00)
+
+        controller.transfer(accountNumber1, accountNumber2, 100.00)
     }
 }
