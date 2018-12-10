@@ -28,7 +28,7 @@ class AccountController(
         return Account(accountNumber, balance)
     }
 
-    fun transfer(srcAccount: String, dstAccount: String, amount: Double) {
+    fun transfer(srcAccount: String, dstAccount: String, amount: Double): String {
         if(srcAccount.isEmpty())
             throw InvalidArgumentException("srcAccount")
         if(dstAccount.isEmpty())
@@ -41,6 +41,8 @@ class AccountController(
             throw InsufficientFunds()
 
         accountRepo.transfer(srcAccount, dstAccount, amount)
+
+        return ""
     }
 
     private fun generateAccountNumber(countryCode: String): String {

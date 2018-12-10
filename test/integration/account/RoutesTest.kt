@@ -15,21 +15,17 @@ import org.junit.BeforeClass
 import test.stageAccount
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
-import uk.stumme.models.NewAccountRequest
-import uk.stumme.models.NewAccountResponse
-import uk.stumme.models.TransferRequest
-import uk.stumme.models.database.Account
-import uk.stumme.models.domain.Account as DomainAccount
-import uk.stumme.module
 import uk.stumme.account.fromJson
-import uk.stumme.models.GetAccountResponse
+import uk.stumme.models.*
+import uk.stumme.models.database.Account
+import uk.stumme.module
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addFactory
-import uy.kohesive.injekt.api.addSingleton
 import uy.kohesive.injekt.api.get
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import uk.stumme.models.domain.Account as DomainAccount
 
 
 class RoutesTest {
@@ -128,12 +124,30 @@ class RoutesTest {
 
     @Test
     fun testPostTransferShouldReturn200() {
+        stageAccount("source", 100.00)
+        stageAccount("destination", 0.00)
+
         testRequest(
             HttpMethod.Post,
             "/accounts/source/transfer/destination",
-            setJsonBody(TransferRequest(100.00))
+            setJsonBody(PostTransferRequest(100.00))
         ) {
             assertEquals(HttpStatusCode.OK, response.status())
+        }
+    }
+
+    @Test
+    fun testPostTransferShouldReturn400WhenInsufficientFunds() {
+        stageAccount("source", 25.00)
+        stageAccount("destination", 0.00)
+
+        testRequest(
+            HttpMethod.Post,
+            "/accounts/source/transfer/destination",
+            setJsonBody(PostTransferRequest(50.00))
+        ) {
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            assertEquals("Insufficient Funds", response.content)
         }
     }
 

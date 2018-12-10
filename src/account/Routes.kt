@@ -3,15 +3,14 @@ package uk.stumme.account
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import exceptions.AccountNotFoundException
+import exceptions.InsufficientFunds
 import exceptions.InvalidArgumentException
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receiveText
 import io.ktor.response.*
 import io.ktor.routing.*
-import uk.stumme.models.GetAccountResponse
-import uk.stumme.models.NewAccountRequest
-import uk.stumme.models.NewAccountResponse
+import uk.stumme.models.*
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -47,7 +46,16 @@ fun Routing.accounts(
 
             route("transfer") {
                 post("{dstAccount}") {
-                    call.respond(HttpStatusCode.OK, "")
+                    try {
+                        val request = Gson().fromJson<PostTransferRequest>(call.receiveText())
+                        val srcAccount = call.parameters["srcAccount"]
+                        val dstAccount = call.parameters["dstAccount"]
+
+                        val transferId = controller.transfer(srcAccount!!, dstAccount!!, request.amount)
+                        call.respond(HttpStatusCode.OK, Gson().toJson(PostTransferResponse(transferId)))
+                    } catch (e: InsufficientFunds) {
+                        call.respond(HttpStatusCode.BadRequest, "Insufficient Funds")
+                    }
                 }
 
                 get {
