@@ -40,12 +40,17 @@ dependencies {
     compile "io.ktor:ktor-gson:$ktor_version"
     compile "uy.kohesive.injekt:injekt-core:1.16.+"
     testCompile "io.ktor:ktor-server-tests:$ktor_version"
-    testCompile "io.mockk:mockk:$mockk_version"
     testCompile 'com.willowtreeapps.assertk:assertk-jvm:0.12'
 }
 
 shadowJar {
     manifest {
-        attributes 'Main-Class': 'io.ktor.server.netty.EngineMain'
+        attributes 'Main-Class': mainClassName
+    }
+}
+
+test {
+    afterTest { desc, result -> 
+        logger.quiet "  [${result.resultType}]  ${desc.className}:\t${desc.name}"
     }
 }
