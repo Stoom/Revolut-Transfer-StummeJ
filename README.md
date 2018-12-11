@@ -15,6 +15,13 @@ docker run -m512M --cpus 2 -it -p 8080:8080 --rm revolut-transfer-stummej
 docker rmi revolut-transfer-stummej
 ```
 
+### Features
+* IBAN accounts can be created
+* The balance of an account can be retrieved
+* Money can be transfered between accounts (Note: This API assumes all money is in the same currency)
+* A summary of all transfers from a source account can be retrieved
+* Invalid IBAN detection (Only checksum)
+
 ## API Documentaion
 #### Create account: 
 Opens an account with an initial deposit
