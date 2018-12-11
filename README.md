@@ -104,12 +104,12 @@ Response:
 With this project I stride to test using BTDD.  With this tests were writen in a way that the underlying implementation could change without having to change the tests.  Mocking/Test Doubles/Fakes, which are not used in this project, are only used at external boundaries where type contracts would seldom change.  Along with this if a test is purly functional then a unit test can fully cover the test, but if the test orchestrates functionality then it's covered by an integration or E2E test.  Some testing is duplicated between the unit and integration tests, but this proves a level of flexiblity that mocks can hinder.
 
 ## Dependencies
-Kotlin - Language
-Ktor - Web framework
-Injekt - Dependency injection
-Gson - JSON serializer/deserializer
-Exposed - DSL/DAO
-H2 - In memory database
-KTest - Kotlin testing framework
-Assertk - Fluent assertions (for collections)
-ShadowJar - Single jar file
+Kotlin - Language  
+Ktor - Web framework  
+Injekt - Dependency injection  
+Gson - JSON serializer/deserializer  
+Exposed - DSL/DAO  
+H2 - In memory database  
+KTest - Kotlin testing framework  
+Assertk - Fluent assertions (for collections)  
+ShadowJar - Single jar file  
