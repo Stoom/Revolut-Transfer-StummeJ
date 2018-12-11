@@ -1,4 +1,4 @@
-package unit.account
+package unit
 
 import assertk.assertions.containsAll
 import exceptions.AccountNotFoundException

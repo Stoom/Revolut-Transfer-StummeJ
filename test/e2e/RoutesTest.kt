@@ -1,4 +1,4 @@
-package integration.account
+package e2e
 
 import assertk.assertions.containsAll
 import com.google.gson.Gson

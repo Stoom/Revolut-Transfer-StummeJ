@@ -1,8 +1,6 @@
-package integration.account
+package integration
 
-import assertk.assertions.contains
 import assertk.assertions.containsAll
-import assertk.assertions.containsExactly
 import assertk.assertions.doesNotContain
 import exceptions.AccountNotFoundException
 import exceptions.InsufficientFunds
