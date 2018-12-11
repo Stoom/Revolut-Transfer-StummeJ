@@ -14,10 +14,7 @@ import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
 import uk.stumme.models.database.Transfers
 import java.util.*
-import kotlin.test.AfterTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class AccountRepoTest {
     private var repo: AccountRepo
@@ -137,5 +134,21 @@ class AccountRepoTest {
             .map { it.id }
 
         assertk.assert(transfers).containsAll(transferId1, transferId2)
+    }
+
+    @Test
+    fun testHasAccount_ShouldReturnTrueWhenAccountExists() {
+        stageAccount(accountNumber1, 0.00)
+
+        val actual = repo.hasAccount(accountNumber1)
+
+        assertTrue(actual)
+    }
+
+    @Test
+    fun testHasAccount_ShouldReturnFalseWhenAccountDoesNotExists() {
+        val actual = repo.hasAccount(accountNumber1)
+
+        assertFalse(actual)
     }
 }

@@ -39,14 +39,14 @@ class AccountController(
         if(amount <= 0.00)
             throw InvalidArgumentException("amount")
 
-        trapAccountNotFound("Source account does not exist") {
-            val sourceBalance = accountRepo.getBalance(srcAccount)
-            if (sourceBalance - amount < 0.00)
-                throw InsufficientFunds()
-        }
-        trapAccountNotFound("Destination account does not exist") {
-            accountRepo.getBalance(dstAccount)
-        }
+        if (!accountRepo.hasAccount(srcAccount))
+            throw AccountNotFoundException("Source account does not exist")
+        if (!accountRepo.hasAccount(dstAccount))
+            throw AccountNotFoundException("Destination account does not exist")
+
+        val sourceBalance = accountRepo.getBalance(srcAccount)
+        if (sourceBalance - amount < 0.00)
+            throw InsufficientFunds()
 
         val transferId = accountRepo.transfer(srcAccount, dstAccount, amount)
         return transferId.toString()
@@ -56,9 +56,8 @@ class AccountController(
         if (accountNumber.isEmpty())
             throw InvalidArgumentException("accountNumber")
 
-        trapAccountNotFound {
-            accountRepo.getBalance(accountNumber)
-        }
+        if (!accountRepo.hasAccount(accountNumber))
+            throw AccountNotFoundException()
 
         return accountRepo.getTransfers(accountNumber)
     }
@@ -68,15 +67,5 @@ class AccountController(
             .map { Random.nextInt(0,9) }
             .joinToString("")
         return "${countryCode}00$accountNumber"
-    }
-
-    private fun trapAccountNotFound(message: String? = null, callback: suspend () -> Unit) {
-        try {
-            runBlocking {
-                callback()
-            }
-        } catch (e: AccountNotFoundException){
-            throw AccountNotFoundException(message)
-        }
     }
 }

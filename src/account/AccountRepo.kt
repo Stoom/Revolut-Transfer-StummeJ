@@ -20,6 +20,14 @@ class AccountRepo() {
         }
     }
 
+    fun hasAccount(accountNumber: String): Boolean {
+        val account = transaction {
+            Account.select { Account.id eq accountNumber }.singleOrNull()
+        }
+
+        return account != null
+    }
+
     fun getBalance(accountNumber: String): Double {
         return transaction {
             val account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
