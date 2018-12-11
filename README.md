@@ -7,6 +7,14 @@ Running `gradle build` will build the application and place a single jar file at
 ## Running
 To run the API, after building or by downloading the release from github, use the `java -jar transfer-0.0.1-all.jar` command.  If you're running from build use the following path: `build/libs/transfer-0.0.1-all.jar`
 
+#### Docker
+If you would like to run with docker run the following:
+```shell
+docker build -t revolut-transfer-stummej .
+docker run -m512M --cpus 2 -it -p 8080:8080 --rm revolut-transfer-stummej
+docker rmi revolut-transfer-stummej
+```
+
 ## API Documentaion
 #### Create account: 
 Opens an account with an initial deposit
