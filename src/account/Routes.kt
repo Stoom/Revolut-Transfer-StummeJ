@@ -61,7 +61,10 @@ fun Routing.accounts(
                 }
 
                 get {
-                    call.respond(HttpStatusCode.OK, "")
+                    val srcAccount = call.parameters["srcAccount"]
+
+                    val transfers = controller.getTransfers(srcAccount!!)
+                    call.respond(HttpStatusCode.OK, Gson().toJson(GetTransfersResponse(transfers)))
                 }
             }
         }

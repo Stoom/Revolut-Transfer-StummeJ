@@ -1,5 +1,6 @@
 package integration.account
 
+import assertk.assertions.containsAll
 import com.google.gson.Gson
 import io.ktor.application.Application
 import io.ktor.http.HttpMethod
@@ -13,19 +14,19 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.BeforeClass
 import test.stageAccount
+import test.stageTransfer
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
 import uk.stumme.account.fromJson
 import uk.stumme.models.*
 import uk.stumme.models.database.Account
+import uk.stumme.models.domain.Transfer
 import uk.stumme.module
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addFactory
 import uy.kohesive.injekt.api.get
-import kotlin.test.AfterTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import java.util.*
+import kotlin.test.*
 import uk.stumme.models.domain.Account as DomainAccount
 
 
@@ -182,6 +183,28 @@ class RoutesTest {
         ) {
             assertEquals(HttpStatusCode.NotFound, response.status())
             assertEquals("Destination account does not exist", response.content)
+        }
+    }
+
+    @Test
+    fun testGetTransferShouldReturn200() {
+        stageAccount("source", 0.00)
+        stageTransfer("source", "destination", 5.00)
+        stageTransfer("source", "destination", 10.00)
+
+        testRequest(
+            HttpMethod.Get,
+            "/accounts/source/transfer"
+        ) {
+            val transfers = Gson()
+                .fromJson<GetTransfersResponse>(response.content!!)
+                .transfers
+                .map { Transfer(UUID(0L, 0L), it.source, it.destination, it.amount) }
+
+            assertk.assert(transfers).containsAll(
+                Transfer(UUID(0L, 0L), "source", "destination", 5.00),
+                Transfer(UUID(0L, 0L), "source", "destination", 10.00)
+            )
         }
     }
 
