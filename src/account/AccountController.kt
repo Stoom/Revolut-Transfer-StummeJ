@@ -68,5 +68,6 @@ class AccountController(
             .map { Random.nextInt(0,9) }
             .joinToString("")
         return Iban("${countryCode}00$accountNumber")
+            .calculateChecksum()
     }
 }

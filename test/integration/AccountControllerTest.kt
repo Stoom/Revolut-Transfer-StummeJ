@@ -46,6 +46,7 @@ class AccountControllerTest {
 
         assertEquals(countryCode, accountNumber.countryCode)
         assertEquals(26, accountNumber.number.length)
+        assertNotEquals("00", accountNumber.checksum)
     }
 
     @Test(expected = InvalidArgumentException::class)
