@@ -2,7 +2,6 @@ package test.unit
 
 import exceptions.InvalidArgumentException
 import uk.stumme.models.domain.Iban
-import kotlin.math.exp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -22,14 +21,9 @@ class IbanTest {
         Iban("GB00ThisIsAVeryLongAccountNumberThatIsNotValid")
     }
 
-    @Test
-    fun testCtor_ShouldCalculateChecksumIfDoubleZero() {
-        val accountNumber = "GB00MIDL07009312345678"
-        val expected = "98"
-
-        val iban = Iban(accountNumber)
-
-        assertEquals(expected, iban.toString().substring(2 until 4))
+    @Test(expected = InvalidArgumentException::class)
+    fun testCtor_ShouldThrowWhenEmptyAccountNumber() {
+        Iban("")
     }
 
     @Test
@@ -40,6 +34,36 @@ class IbanTest {
         val iban = Iban(accountNumber)
 
         assertEquals(expected, iban.toString())
+    }
+
+    @Test
+    fun testCountryCode_ShouldReturnCountryCode() {
+        val accountNumber = "GB98MIDL07009312345678"
+        val expected = "GB"
+
+        val iban = Iban(accountNumber)
+
+        assertEquals(expected, iban.countryCode)
+    }
+
+    @Test
+    fun testChecksum_ShouldReturnChecksum() {
+        val accountNumber = "GB98MIDL07009312345678"
+        val expected = "98"
+
+        val iban = Iban(accountNumber)
+
+        assertEquals(expected, iban.checksum)
+    }
+
+    @Test
+    fun testNumber_ShouldReturnNumber() {
+        val accountNumber = "GB98MIDL07009312345678"
+        val expected = "MIDL07009312345678"
+
+        val iban = Iban(accountNumber)
+
+        assertEquals(expected, iban.number)
     }
 
     @Test
@@ -60,5 +84,15 @@ class IbanTest {
         val actual = iban.isValid()
 
         assertFalse(actual)
+    }
+
+    @Test
+    fun testCalculateChecksum_ShouldCalculateChecksumIfDoubleZero() {
+        val accountNumber = "GB00MIDL07009312345678"
+        val expected = "98"
+
+        val iban = Iban(accountNumber).calculateChecksum()
+
+        assertEquals(expected, iban.toString().substring(2 until 4))
     }
 }
