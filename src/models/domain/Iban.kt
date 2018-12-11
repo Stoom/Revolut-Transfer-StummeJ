@@ -31,7 +31,7 @@ class Iban(private var accountNumber: String) {
     fun calculateChecksum(): Iban {
         val checksumBigInt = BigInteger("${number}${countryCode}00".toIbanIntString())
         val checksumNumber = checksumBigInt.mod(97.toBigInteger()).toInt()
-        val checksum = (98 - checksumNumber).toString().padStart(2, '0')
+        val checksum = "${(98 - checksumNumber)}".padStart(2, '0')
 
         accountNumber = "$countryCode$checksum$number"
 
@@ -40,7 +40,7 @@ class Iban(private var accountNumber: String) {
 
     private fun Char.toIbanInt(): Int {
         if (this !in 'A'..'Z')
-            return this.toString().toInt()
+            return "$this".toInt()
 
         return (this.dec() - 54).toInt()
     }
