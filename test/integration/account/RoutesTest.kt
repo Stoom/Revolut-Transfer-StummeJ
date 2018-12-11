@@ -208,6 +208,16 @@ class RoutesTest {
         }
     }
 
+    @Test
+    fun testGetTransferShouldReturn404WhenAccountDoesNotExist() {
+        testRequest(
+            HttpMethod.Get,
+            "/accounts/source/transfer"
+        ) {
+            assertEquals(HttpStatusCode.NotFound, response.status())
+        }
+    }
+
     private fun testRequest(
         method: HttpMethod, uri: String,
         setup: suspend TestApplicationRequest.() -> Unit = {},

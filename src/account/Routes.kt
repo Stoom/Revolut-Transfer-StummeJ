@@ -19,8 +19,6 @@ inline fun <reified T> Gson.fromJson(json: String) = this.fromJson<T>(json, obje
 fun Routing.accounts(
     controller: AccountController = Injekt.get()
 ) {
-    val gson = Gson()
-
     route("/accounts") {
         post {
             try {
@@ -61,10 +59,14 @@ fun Routing.accounts(
                 }
 
                 get {
-                    val srcAccount = call.parameters["srcAccount"]
+                    try {
+                        val srcAccount = call.parameters["srcAccount"]
 
-                    val transfers = controller.getTransfers(srcAccount!!)
-                    call.respond(HttpStatusCode.OK, Gson().toJson(GetTransfersResponse(transfers)))
+                        val transfers = controller.getTransfers(srcAccount!!)
+                        call.respond(HttpStatusCode.OK, Gson().toJson(GetTransfersResponse(transfers)))
+                    } catch (e: AccountNotFoundException) {
+                        call.respond(HttpStatusCode.NotFound)
+                    }
                 }
             }
         }
