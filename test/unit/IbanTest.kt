@@ -1,4 +1,4 @@
-package test.unit
+package unit
 
 import exceptions.InvalidArgumentException
 import uk.stumme.models.domain.Iban

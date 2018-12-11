@@ -1,3 +1,18 @@
+FROM library/gradle:5.0-jdk-alpine AS build-env
+
+ENV BUILD_USER gradle
+
+USER root
+WORKDIR /app
+COPY . ./
+RUN rm -rf .gradle
+RUN chown -R $BUILD_USER /app
+
+USER $BUILD_USER
+WORKDIR /app
+RUN gradle build
+
+#--------------------------------
 FROM openjdk:8-jre-alpine
 
 ENV APPLICATION_USER ktor
@@ -8,7 +23,7 @@ RUN chown -R $APPLICATION_USER /app
 
 USER $APPLICATION_USER
 
-COPY ./build/libs/transfer-0.0.1-all.jar /app/transfer.jar
+COPY --from=build-env /app/build/libs/transfer-0.0.1-all.jar /app/transfer.jar
 WORKDIR /app
 
 CMD ["java", "-server", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-XX:InitialRAMFraction=2", "-XX:MinRAMFraction=2", "-XX:MaxRAMFraction=2", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100", "-XX:+UseStringDeduplication", "-jar", "transfer.jar"]
