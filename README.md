@@ -1,4 +1,6 @@
 # Revolut Transfer Home Task
+[![Build Status](https://travis-ci.org/Stoom/Revolut-Transfer-StummeJ.svg?branch=master)](https://travis-ci.org/Stoom/Revolut-Transfer-StummeJ)
+
 This is an implemenntation of tht Revolut home task.  The goal of this API is to transfer money between two accounts.  Routes are sturcture in a RESTful architecuter.
 
 ## Building
