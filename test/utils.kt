@@ -7,9 +7,11 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import uk.stumme.models.database.Account
 import uk.stumme.models.database.Transfers
+import uk.stumme.models.domain.Iban
 import java.lang.Exception
 import java.util.*
 
+fun stageAccount(accountNumber: Iban, balance: Double = 0.00) = stageAccount(accountNumber.toString(), balance)
 fun stageAccount(accountNumber: String, balance: Double = 0.00) = transaction {
     Account.insert {
         it[Account.id] = accountNumber
@@ -17,6 +19,8 @@ fun stageAccount(accountNumber: String, balance: Double = 0.00) = transaction {
     }
 }
 
+fun stageTransfer(srcAccount: Iban, dstAccount: Iban, amount: Double = 0.00)
+        : UUID = stageTransfer(srcAccount.toString(), dstAccount.toString(), amount)
 fun stageTransfer(srcAccount: String, dstAccount: String, amount: Double = 0.00): UUID = transaction {
     Transfers.insert {
         it[Transfers.id] = UUID.randomUUID()

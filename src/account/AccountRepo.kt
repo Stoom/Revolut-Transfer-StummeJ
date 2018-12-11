@@ -1,67 +1,69 @@
 package uk.stumme.account
 
 import exceptions.AccountNotFoundException
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import uk.stumme.models.database.Account
 import uk.stumme.models.database.Transfers
+import uk.stumme.models.domain.Iban
 import uk.stumme.models.domain.Transfer
 import java.util.*
 
-class AccountRepo() {
-    fun createAccount(accountNumber: String, initialDeposit: Double) {
+class AccountRepo {
+    fun createAccount(accountNumber: Iban, initialDeposit: Double) {
         transaction {
             Account.insert {
-                it[Account.id] = accountNumber
+                it[Account.id] = "$accountNumber"
                 it[Account.balance] = initialDeposit.toBigDecimal()
             }
         }
     }
 
-    fun hasAccount(accountNumber: String): Boolean {
+    fun hasAccount(accountNumber: Iban): Boolean {
         val account = transaction {
-            Account.select { Account.id eq accountNumber }.singleOrNull()
+            Account.select { Account.id eq "$accountNumber" }.singleOrNull()
         }
 
         return account != null
     }
 
-    fun getBalance(accountNumber: String): Double {
+    fun getBalance(accountNumber: Iban): Double {
         return transaction {
-            val account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
+            val account = Account.select { Account.id eq "$accountNumber" }.singleOrNull()
                 ?: throw AccountNotFoundException()
             account[Account.balance].toDouble()
         }
     }
 
-    fun transfer(srcAccount: String, dstAccount: String, amount: Double): UUID {
+    fun transfer(srcAccount: Iban, dstAccount: Iban, amount: Double): UUID {
+        val sourceAccount = "$srcAccount"
+        val destAccount = "$dstAccount"
+
         return transaction {
-            val source = Account.select { Account.id.eq(srcAccount) }
+            val source = Account.select { Account.id eq sourceAccount }
                 .single()[Account.balance]
-            val destination = Account.select { Account.id.eq(dstAccount) }
+            val destination = Account.select { Account.id eq destAccount }
                 .single()[Account.balance]
             val transferAmount = amount.toBigDecimal()
 
-            Account.update({ Account.id eq srcAccount }) {
+            Account.update({ Account.id eq sourceAccount }) {
                 it[balance] = source - transferAmount
             }
-            Account.update({ Account.id eq dstAccount }) {
+            Account.update({ Account.id eq destAccount }) {
                 it[balance] = destination + transferAmount
             }
             Transfers.insert {
-                it[sourceAccount] = srcAccount
-                it[destinationAccount] = dstAccount
+                it[Transfers.sourceAccount] = sourceAccount
+                it[Transfers.destinationAccount] = destAccount
                 it[Transfers.amount] = transferAmount
             }[Transfers.id] ?: throw Exception()
         }
     }
 
-    fun getTransfers(accountNumber: String): List<Transfer> {
+    fun getTransfers(accountNumber: Iban): List<Transfer> {
         return transaction {
             Transfers.select {
-                Transfers.sourceAccount eq accountNumber
+                Transfers.sourceAccount eq "$accountNumber"
             }.toList()
                 .map { Transfer(
                     it[Transfers.id],

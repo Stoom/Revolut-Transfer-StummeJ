@@ -5,6 +5,7 @@ import exceptions.InsufficientFunds
 import exceptions.InvalidArgumentException
 import kotlinx.coroutines.runBlocking
 import uk.stumme.models.domain.Account
+import uk.stumme.models.domain.Iban
 import uk.stumme.models.domain.Transfer
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -13,7 +14,7 @@ import kotlin.random.Random
 class AccountController(
     val accountRepo: AccountRepo = Injekt.get()
 ) {
-    fun createAccount(countryCode: String, initialDeposit: Double): String {
+    fun createAccount(countryCode: String, initialDeposit: Double): Iban {
         if(countryCode.isEmpty())
             throw InvalidArgumentException("countryCode")
         if(initialDeposit < 0)
@@ -26,15 +27,15 @@ class AccountController(
         return accountNumber
     }
 
-    fun getAccount(accountNumber: String): Account {
+    fun getAccount(accountNumber: Iban): Account {
         val balance = this.accountRepo.getBalance(accountNumber)
         return Account(accountNumber, balance)
     }
 
-    fun transfer(srcAccount: String, dstAccount: String, amount: Double): String {
-        if(srcAccount.isEmpty())
+    fun transfer(srcAccount: Iban, dstAccount: Iban, amount: Double): String {
+        if(!srcAccount.isValid())
             throw InvalidArgumentException("srcAccount")
-        if(dstAccount.isEmpty())
+        if(!dstAccount.isValid())
             throw InvalidArgumentException("dstAccount")
         if(amount <= 0.00)
             throw InvalidArgumentException("amount")
@@ -49,11 +50,11 @@ class AccountController(
             throw InsufficientFunds()
 
         val transferId = accountRepo.transfer(srcAccount, dstAccount, amount)
-        return transferId.toString()
+        return "$transferId"
     }
 
-    fun getTransfers(accountNumber: String): List<Transfer> {
-        if (accountNumber.isEmpty())
+    fun getTransfers(accountNumber: Iban): List<Transfer> {
+        if (!accountNumber.isValid())
             throw InvalidArgumentException("accountNumber")
 
         if (!accountRepo.hasAccount(accountNumber))
@@ -62,10 +63,10 @@ class AccountController(
         return accountRepo.getTransfers(accountNumber)
     }
 
-    private fun generateAccountNumber(countryCode: String): String {
-        val accountNumber = (1..18)
+    private fun generateAccountNumber(countryCode: String): Iban {
+        val accountNumber = (1..26)
             .map { Random.nextInt(0,9) }
             .joinToString("")
-        return "${countryCode}00$accountNumber"
+        return Iban("${countryCode}00$accountNumber")
     }
 }

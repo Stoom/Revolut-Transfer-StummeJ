@@ -13,26 +13,27 @@ import test.stageAccount
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
 import uk.stumme.models.database.Transfers
+import uk.stumme.models.domain.Iban
 import java.util.*
 import kotlin.test.*
 
 class AccountRepoTest {
     private var repo: AccountRepo
-    private var accountNumber1: String
-    private var accountNumber2: String
+    private var accountNumber1: Iban
+    private var accountNumber2: Iban
 
     init {
         Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
 
         this.repo = AccountRepo()
-        this.accountNumber1 = "GB00123456789012345678"
-        this.accountNumber2 = "GB00876543210987654321"
+        this.accountNumber1 = Iban("GB00123456789012345678")
+        this.accountNumber2 = Iban("GB00876543210987654321")
 
         initializeDatabase()
     }
 
     @AfterTest
-    fun Teardown() {
+    fun teardown() {
         cleanupDatabase()
     }
 
@@ -41,7 +42,7 @@ class AccountRepoTest {
         repo.createAccount(accountNumber1, 0.00)
 
         transaction {
-            val saved = Account.select { Account.id.eq(accountNumber1) }.singleOrNull()
+            val saved = Account.select { Account.id eq "$accountNumber1" }.singleOrNull()
             assertNotNull(saved)
         }
     }
@@ -52,7 +53,7 @@ class AccountRepoTest {
         repo.createAccount(accountNumber1, expectedAmount)
 
         transaction {
-            val saved = Account.select { Account.id.eq(accountNumber1) }.single()
+            val saved = Account.select { Account.id eq "$accountNumber1" }.single()
             assertEquals(expectedAmount.toBigDecimal(), saved[Account.balance])
         }
     }
@@ -62,7 +63,7 @@ class AccountRepoTest {
         val expected = 315.12
         transaction {
             Account.insert {
-                it[Account.id] = accountNumber1
+                it[Account.id] = "$accountNumber1"
                 it[Account.balance] = expected.toBigDecimal()
             }
         }
@@ -74,7 +75,7 @@ class AccountRepoTest {
 
     @Test(expected = AccountNotFoundException::class)
     fun testGetBalance_ShouldThrowExceptionWhenAccountDoesNotExist() {
-        repo.getBalance("Some account that doesn't exist")
+        repo.getBalance(accountNumber1)
     }
 
     @Test
@@ -85,8 +86,8 @@ class AccountRepoTest {
         repo.transfer(accountNumber1, accountNumber2, 100.00)
 
         transaction {
-            val actualAccount1 = Account.select{ Account.id.eq(accountNumber1) }.single()
-            val actualAccount2 = Account.select{ Account.id.eq(accountNumber2) }.single()
+            val actualAccount1 = Account.select{ Account.id eq "$accountNumber1" }.single()
+            val actualAccount2 = Account.select{ Account.id eq "$accountNumber2" }.single()
 
             Assert.assertEquals(0.00, actualAccount1[Account.balance].toDouble(), 0.01)
             Assert.assertEquals(100.00, actualAccount2[Account.balance].toDouble(), 0.01)
@@ -105,8 +106,8 @@ class AccountRepoTest {
             val transfer = Transfers.select { Transfers.id eq transferId }.singleOrNull()
 
             assertNotNull(transfer)
-            assertEquals(accountNumber1, transfer[Transfers.sourceAccount])
-            assertEquals(accountNumber2, transfer[Transfers.destinationAccount])
+            assertEquals("$accountNumber1", transfer[Transfers.sourceAccount])
+            assertEquals("$accountNumber2", transfer[Transfers.destinationAccount])
             Assert.assertEquals(amount, transfer[Transfers.amount].toDouble(), 0.01)
         }
     }
@@ -130,7 +131,7 @@ class AccountRepoTest {
             } get Transfers.id
         }
 
-        val transfers = repo.getTransfers("source")
+        val transfers = repo.getTransfers(Iban("source"))
             .map { it.id }
 
         assertk.assert(transfers).containsAll(transferId1, transferId2)

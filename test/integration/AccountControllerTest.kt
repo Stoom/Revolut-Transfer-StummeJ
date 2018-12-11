@@ -16,10 +16,13 @@ import test.stageTransfer
 import uk.stumme.account.AccountController
 import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
+import uk.stumme.models.domain.Iban
 import kotlin.test.*
 
 class AccountControllerTest {
     private val controller: AccountController
+    private val accountNumber1 = Iban("GB32123456789")
+    private val accountNumber2 = Iban("GB81987654321")
 
     init {
         Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
@@ -41,9 +44,8 @@ class AccountControllerTest {
 
         val accountNumber = controller.createAccount(countryCode, 0.00)
 
-        assertEquals(countryCode, accountNumber.substring(0 until 2))
-        assertEquals("00", accountNumber.substring(2 until 4))
-        assertEquals(22, accountNumber.length)
+        assertEquals(countryCode, accountNumber.countryCode)
+        assertEquals(26, accountNumber.number.length)
     }
 
     @Test(expected = InvalidArgumentException::class)
@@ -61,30 +63,29 @@ class AccountControllerTest {
         val accountNumber = controller.createAccount("GB", 0.00)
 
         transaction {
-            val account = Account.select { Account.id.eq(accountNumber) }.singleOrNull()
+            val account = Account.select { Account.id eq "$accountNumber" }.singleOrNull()
             assertNotNull(account)
         }
     }
 
     @Test
     fun testGetAccount_ReturnsTheAccountWithTheCorrectBalance() {
-        val accountNumber = "GB00123456789012345678"
         val expectedBalance = 24.50
         transaction {
             Account.insert {
-                it[Account.id] = accountNumber
+                it[Account.id] = "$accountNumber1"
                 it[Account.balance] = expectedBalance.toBigDecimal()
             }
         }
 
-        val account = controller.getAccount(accountNumber)
+        val account = controller.getAccount(accountNumber1)
 
         assertEquals(expectedBalance, account.balance)
     }
 
     @Test(expected = AccountNotFoundException::class)
     fun testGetAccount_ThrowsWhenAccountDoesNotExist() {
-        controller.getAccount("THIS ACCOUNT DOES NOT EXIST")
+        controller.getAccount(accountNumber1)
     }
 
     @Test
@@ -92,8 +93,6 @@ class AccountControllerTest {
         val regex = """\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b"""
             .toRegex(RegexOption.IGNORE_CASE)
 
-        val accountNumber1 = "GB00123456789"
-        val accountNumber2 = "GB00987654321"
         stageAccount(accountNumber1, 50.00)
         stageAccount(accountNumber2, 0.00)
 
@@ -103,29 +102,27 @@ class AccountControllerTest {
     }
 
     @Test(expected = InvalidArgumentException::class)
-    fun testTransfer_ThrowsWhenMissingSourceAccount() {
-        controller.transfer("", "foobar", 1.00)
+    fun testTransfer_ThrowsWhenInvalidSourceAccount() {
+        controller.transfer(Iban("GB990"), accountNumber2, 1.00)
     }
 
     @Test(expected = InvalidArgumentException::class)
-    fun testTransfer_ThrowsWhenMissingDestinationAccount() {
-        controller.transfer("foobar", "", 1.00)
+    fun testTransfer_ThrowsWhenInvalidDestinationAccount() {
+        controller.transfer(accountNumber1, Iban("GB990"), 1.00)
     }
 
     @Test(expected = InvalidArgumentException::class)
     fun testTransfer_ThrowsWhenAmountIsZero() {
-        controller.transfer("foobar", "fizzbuzz", 0.00)
+        controller.transfer(accountNumber1, accountNumber2, 0.00)
     }
 
     @Test(expected = InvalidArgumentException::class)
     fun testTransfer_ThrowsWhenAmountIsLessThanZero() {
-        controller.transfer("foobar", "fizzbuzz", -1.05)
+        controller.transfer(accountNumber1, accountNumber2, -1.05)
     }
 
     @Test(expected = InsufficientFunds::class)
     fun testTransfer_ShouldThrowExceptionWhenTransferringMoreThanInSourceAccount() {
-        val accountNumber1 = "GB00123456789"
-        val accountNumber2 = "GB00987654321"
         stageAccount(accountNumber1, 50.00)
         stageAccount(accountNumber2, 0.00)
 
@@ -134,8 +131,6 @@ class AccountControllerTest {
 
     @Test
     fun testGetTransfers_ShouldReturnTransfers() {
-        val accountNumber1 = "GB00123456789"
-        val accountNumber2 = "GB00987654321"
         stageAccount(accountNumber1, 150.00)
         val transfer1 = stageTransfer(accountNumber1, accountNumber2, 50.00)
         val transfer2 = stageTransfer(accountNumber1, accountNumber2, 100.00)
@@ -150,20 +145,19 @@ class AccountControllerTest {
 
     @Test
     fun testGetTransfers_ShouldReturnEmptyListWhenNoTransfers() {
-        val accountNumber = "GB00123456789"
-        stageAccount(accountNumber, 150.00)
-        val transfers = controller.getTransfers(accountNumber)
+        stageAccount(accountNumber1, 150.00)
+        val transfers = controller.getTransfers(accountNumber1)
 
         assertEquals(0, transfers.size)
     }
 
     @Test(expected = InvalidArgumentException::class)
     fun testGetTransfers_ShouldThrowExceptionWhenEmptyAccount() {
-        controller.getTransfers("")
+        controller.getTransfers(Iban(""))
     }
 
     @Test(expected = AccountNotFoundException::class)
     fun testGetTransfers_ShouldThrowExceptionWhenAccountDoesNotExist() {
-        controller.getTransfers("ACCOUNT THAT DOES NOT EXIST")
+        controller.getTransfers(accountNumber1)
     }
 }

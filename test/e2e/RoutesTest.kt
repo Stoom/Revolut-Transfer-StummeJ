@@ -20,6 +20,7 @@ import uk.stumme.account.AccountRepo
 import uk.stumme.account.fromJson
 import uk.stumme.models.*
 import uk.stumme.models.database.Account
+import uk.stumme.models.domain.Iban
 import uk.stumme.models.domain.Transfer
 import uk.stumme.module
 import uy.kohesive.injekt.Injekt
@@ -39,6 +40,9 @@ class RoutesTest {
             Injekt.addFactory { AccountController(Injekt.get()) }
         }
     }
+
+    private val accountNumber1 = Iban("GB32123456789")
+    private val accountNumber2 = Iban("GB81987654321")
 
     init {
         Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "org.h2.Driver")
@@ -66,7 +70,7 @@ class RoutesTest {
 
             val body = Gson().fromJson<NewAccountResponse>(response.content!!)
             assertEquals("GB", body.accountNumber.substring(0 until 2))
-            assertEquals("00", body.accountNumber.substring(2 until 4))
+            assertEquals(26, body.accountNumber.substring(4).length)
         }
     }
 
@@ -105,14 +109,14 @@ class RoutesTest {
 
     @Test
     fun testGetAccountShouldReturn404WhenAccountIsNotFound() {
-        testRequest(HttpMethod.Get, "/accounts/FakeAccount") {
+        testRequest(HttpMethod.Get, "/accounts/$accountNumber1") {
             assertEquals(HttpStatusCode.NotFound, response.status())
         }
     }
 
     @Test
     fun testGetAccountShouldReturnAccount() {
-        val expectedAccount = GetAccountResponse("GB00123456789012345678", 50.00)
+        val expectedAccount = GetAccountResponse("$accountNumber1", 50.00)
         stageAccount(expectedAccount.accountNumber, expectedAccount.balance)
 
         testRequest(HttpMethod.Get, "/accounts/${expectedAccount.accountNumber}") {
@@ -128,12 +132,12 @@ class RoutesTest {
         val regex = """\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b"""
             .toRegex(RegexOption.IGNORE_CASE)
 
-        stageAccount("source", 100.00)
-        stageAccount("destination", 0.00)
+        stageAccount(accountNumber1, 100.00)
+        stageAccount(accountNumber2, 0.00)
 
         testRequest(
             HttpMethod.Post,
-            "/accounts/source/transfer/destination",
+            "/accounts/${accountNumber1}/transfer/${accountNumber2}",
             setJsonBody(PostTransferRequest(100.00))
         ) {
             val transfer = Gson().fromJson<PostTransferResponse>(response.content!!)
@@ -145,12 +149,12 @@ class RoutesTest {
 
     @Test
     fun testPostTransferShouldReturn400WhenInsufficientFunds() {
-        stageAccount("source", 25.00)
-        stageAccount("destination", 0.00)
+        stageAccount(accountNumber1, 25.00)
+        stageAccount(accountNumber2, 0.00)
 
         testRequest(
             HttpMethod.Post,
-            "/accounts/source/transfer/destination",
+            "/accounts/${accountNumber1}/transfer/${accountNumber2}",
             setJsonBody(PostTransferRequest(50.00))
         ) {
             assertEquals(HttpStatusCode.BadRequest, response.status())
@@ -160,11 +164,11 @@ class RoutesTest {
 
     @Test
     fun testPostTransferShouldReturn404WhenSourceAccountDoesNotExist() {
-        stageAccount("destination", 0.00)
+        stageAccount(accountNumber2, 0.00)
 
         testRequest(
             HttpMethod.Post,
-            "/accounts/source/transfer/destination",
+            "/accounts/${accountNumber1}/transfer/${accountNumber2}",
             setJsonBody(PostTransferRequest(50.00))
         ) {
             assertEquals(HttpStatusCode.NotFound, response.status())
@@ -174,11 +178,11 @@ class RoutesTest {
 
     @Test
     fun testPostTransferShouldReturn404WhenDestinationAccountDoesNotExist() {
-        stageAccount("source", 50.00)
+        stageAccount(accountNumber1, 50.00)
 
         testRequest(
             HttpMethod.Post,
-            "/accounts/source/transfer/destination",
+            "/accounts/${accountNumber1}/transfer/${accountNumber2}",
             setJsonBody(PostTransferRequest(50.00))
         ) {
             assertEquals(HttpStatusCode.NotFound, response.status())
@@ -188,13 +192,13 @@ class RoutesTest {
 
     @Test
     fun testGetTransferShouldReturn200() {
-        stageAccount("source", 0.00)
-        stageTransfer("source", "destination", 5.00)
-        stageTransfer("source", "destination", 10.00)
+        stageAccount(accountNumber1, 0.00)
+        stageTransfer(accountNumber1, accountNumber2, 5.00)
+        stageTransfer(accountNumber1, accountNumber2, 10.00)
 
         testRequest(
             HttpMethod.Get,
-            "/accounts/source/transfer"
+            "/accounts/${accountNumber1}/transfer"
         ) {
             val transfers = Gson()
                 .fromJson<GetTransfersResponse>(response.content!!)
@@ -202,8 +206,8 @@ class RoutesTest {
                 .map { Transfer(UUID(0L, 0L), it.source, it.destination, it.amount) }
 
             assertk.assert(transfers).containsAll(
-                Transfer(UUID(0L, 0L), "source", "destination", 5.00),
-                Transfer(UUID(0L, 0L), "source", "destination", 10.00)
+                Transfer(UUID(0L, 0L), "$accountNumber1", "$accountNumber2", 5.00),
+                Transfer(UUID(0L, 0L), "$accountNumber1", "$accountNumber2", 10.00)
             )
         }
     }
@@ -212,7 +216,7 @@ class RoutesTest {
     fun testGetTransferShouldReturn404WhenAccountDoesNotExist() {
         testRequest(
             HttpMethod.Get,
-            "/accounts/source/transfer"
+            "/accounts/${accountNumber1}/transfer"
         ) {
             assertEquals(HttpStatusCode.NotFound, response.status())
         }
