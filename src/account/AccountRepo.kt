@@ -13,9 +13,27 @@ import java.util.*
 
 class AccountRepo {
     companion object {
-        val sourceLocks = mutableMapOf<String, Mutex>()
-        val destinationLocks = mutableMapOf<String, Mutex>()
+        val accountLocks = mutableMapOf<String, Mutex>()
+        private val getLock = Mutex()
+
+        private suspend fun getAccountLock(srcAccount: String, dstAccount: String) {
+            getLock.lock()
+            if (!accountLocks.containsKey(srcAccount))
+                accountLocks[srcAccount] = Mutex()
+            if (!accountLocks.containsKey(dstAccount))
+                accountLocks[dstAccount] = Mutex()
+
+            accountLocks[srcAccount]!!.lock()
+            accountLocks[dstAccount]!!.lock()
+            getLock.unlock()
+        }
+
+        private suspend fun releaseAccountLock(srcAccount: String, dstAccount: String) {
+            accountLocks[dstAccount]!!.unlock()
+            accountLocks[srcAccount]!!.unlock()
+        }
     }
+
     fun createAccount(accountNumber: Iban, initialDeposit: Double) {
         transaction {
             Account.insert {
@@ -23,8 +41,6 @@ class AccountRepo {
                 it[Account.balance] = initialDeposit.toBigDecimal()
             }
         }
-        sourceLocks["$accountNumber"] = Mutex()
-        destinationLocks["$accountNumber"] = Mutex()
     }
 
     fun hasAccount(accountNumber: Iban): Boolean {
@@ -48,8 +64,7 @@ class AccountRepo {
         val destAccount = "$dstAccount"
 
         try {
-            AccountRepo.sourceLocks[sourceAccount]!!.lock()
-            AccountRepo.destinationLocks[destAccount]!!.lock()
+            AccountRepo.getAccountLock(sourceAccount, destAccount)
             transaction {
                 val source = Account.select { Account.id eq sourceAccount }
                     .single()[Account.balance]
@@ -69,10 +84,8 @@ class AccountRepo {
                     it[Transfers.amount] = transferAmount
                 }[Transfers.id] ?: throw Exception()
             }
-        }
-        finally {
-            AccountRepo.sourceLocks[sourceAccount]!!.unlock()
-            AccountRepo.destinationLocks[destAccount]!!.unlock()
+        } finally {
+            AccountRepo.releaseAccountLock(sourceAccount, destAccount)
         }
     }
 
@@ -81,13 +94,14 @@ class AccountRepo {
             Transfers.select {
                 Transfers.sourceAccount eq "$accountNumber"
             }.toList()
-                .map { Transfer(
-                    it[Transfers.id],
-                    it[Transfers.sourceAccount],
-                    it[Transfers.destinationAccount],
-                    it[Transfers.amount].toDouble()
-                )
-            }
+                .map {
+                    Transfer(
+                        it[Transfers.id],
+                        it[Transfers.sourceAccount],
+                        it[Transfers.destinationAccount],
+                        it[Transfers.amount].toDouble()
+                    )
+                }
         }
     }
 }

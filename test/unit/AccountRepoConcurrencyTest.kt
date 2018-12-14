@@ -80,6 +80,36 @@ class AccountRepoConcurrencyTest {
         assert(results.size).isEqualTo(jobCount)
     }
 
+    @Test
+    fun testTransfer_ShouldHandleMultipleAccountTransfers() = runBlocking {
+        val accounts = listOf(
+            generateAccountNumber("AA"),
+            generateAccountNumber("BB"),
+            generateAccountNumber("DD"),
+            generateAccountNumber("EE"),
+            generateAccountNumber("FF"),
+            generateAccountNumber("GG")
+            )
+        accounts.forEach { stageAccount(it, 1000.00) }
+        val jobCount = 500
+
+        val results = GlobalScope.massiveRun<UUID>(jobCount) {
+            var srcIdx = -1
+            var dstIdx = -1
+            while(srcIdx == dstIdx) {
+                srcIdx = Random.nextInt(0,3)
+                dstIdx = Random.nextInt(0,3)
+            }
+            val src = accounts[srcIdx]
+            val dst = accounts[dstIdx]
+
+            println("Transferring from $src ===> $dst")
+            repo.transfer(src, dst, 1.00)
+        }
+
+        assert(results.size).isEqualTo(jobCount)
+    }
+
     @Suppress("UNCHECKED_CAST")
     suspend fun <T> CoroutineScope.massiveRun(jobCount: Int, action: suspend () -> Unit): List<T> {
         val results = mutableListOf<T>()
