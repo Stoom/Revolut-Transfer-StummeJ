@@ -39,6 +39,7 @@ dependencies {
     compile "io.ktor:ktor-server-core:$ktor_version"
     compile "io.ktor:ktor-gson:$ktor_version"
     compile "uy.kohesive.injekt:injekt-core:1.16.+"
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1'
     testCompile "io.ktor:ktor-server-tests:$ktor_version"
     testCompile 'com.willowtreeapps.assertk:assertk-jvm:0.12'
 }

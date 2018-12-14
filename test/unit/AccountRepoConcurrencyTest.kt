@@ -2,7 +2,6 @@ package test.unit
 
 import assertk.assert
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNotEqualTo
 import kotlinx.coroutines.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.select
@@ -59,7 +58,7 @@ class AccountRepoConcurrencyTest {
     }
 
     @Test
-    fun testTransfer_ProvesConcurrentTransfersIsNotAllowed() = runBlocking {
+    fun testTransfer_ShouldLockAndTransferCorrectly() = runBlocking {
         val accountNumber1 = generateAccountNumber("UT")
         val accountNumber2 = generateAccountNumber("UT")
         stageAccount(accountNumber1, 1000.00)
@@ -74,8 +73,8 @@ class AccountRepoConcurrencyTest {
             val accounts1 = Account.select { Account.id eq "$accountNumber1" }.single()[Account.balance]
             val accounts2 = Account.select { Account.id eq "$accountNumber2" }.single()[Account.balance]
 
-            assert(accounts1).isNotEqualTo(0.00)
-            assert(accounts2).isNotEqualTo(1000.00)
+            assert(accounts1.toDouble()).isEqualTo(0.00)
+            assert(accounts2.toDouble()).isEqualTo(1000.00)
         }
 
         assert(results.size).isEqualTo(jobCount)

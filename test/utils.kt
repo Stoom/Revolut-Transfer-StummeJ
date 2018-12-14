@@ -1,10 +1,12 @@
 package test
 
+import kotlinx.coroutines.sync.Mutex
 import org.h2.value.Transfer
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import uk.stumme.account.AccountRepo
 import uk.stumme.models.database.Account
 import uk.stumme.models.database.Transfers
 import uk.stumme.models.domain.Iban
@@ -17,6 +19,8 @@ fun stageAccount(accountNumber: String, balance: Double = 0.00) = transaction {
         it[Account.id] = accountNumber
         it[Account.balance] = balance.toBigDecimal()
     }
+    AccountRepo.sourceLocks[accountNumber] = Mutex()
+    AccountRepo.destinationLocks[accountNumber] = Mutex()
 }
 
 fun stageTransfer(srcAccount: Iban, dstAccount: Iban, amount: Double = 0.00)
